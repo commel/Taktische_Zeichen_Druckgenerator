@@ -19,6 +19,7 @@ Dieses Tool wurde entwickelt, um Einsatzkräften von **THW**, **Feuerwehr**, **R
 - ✅ **Automatische Anpassung** an Druckdienstleister-Vorgaben (Größen, Beschnittränder, Abstände)
 - ✅ **Druckfertige PDFs** - CMYK, PDF/X-1a:2001, 300-1200 DPI wählbar
 - ✅ **Stapelverarbeitung** - Dutzende Zeichen in Minuten statt Stunden
+- ✅ **Schnelle Nachproduktion im Einsatzfall** - Vorbereitete PDF-Schnittbögen einfach ausdrucken und zuschneiden
 
 ## Features
 
@@ -46,12 +47,12 @@ Dieses Tool wurde entwickelt, um Einsatzkräften von **THW**, **Feuerwehr**, **R
 
 ## Installation
 
-1. **Release herunterladen** - [Aktuelle Version v0.8.5](releases/)
+1. **Release herunterladen** - [Releases](releases/)
 2. **ZIP-Datei entpacken** in ein beliebiges Verzeichnis
 3. **TaktischeZeichenDruckgenerator.exe starten**
 4. Fertig!
 
-**Empfohlen:** Schriftart installieren (im `resources/` Ordner) für optimale Darstellung.
+**Schriftarten:** Das Tool erkennt automatisch fehlende Schriftarten in den SVG-Vorlagen und listet diese beim Export auf, damit sie bei Bedarf nachinstalliert werden können.
 
 ## Erste Schritte
 
