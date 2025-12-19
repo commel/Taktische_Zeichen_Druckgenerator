@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# https://github.com/niess/python-appimage/releases
+PYTHON_IMAGE_VERSION=python3.13/python3.13.9-cp313-cp313t-manylinux_2_28_x86_64.AppImage
+BASE_APP_IMAGE=https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+
+set -e  # Exit on error
+
+SOURCE_DIR=$(pwd $0)
+BUILD_TMP_DIR=$(mktemp -d)
+TOOLS_TMP_DIR="/tmp/appimage"
+APPIMAGE_BASE="python.AppImage"
+APPIMAGE_TOOL="appimagetool.AppImage"
+
+VERSION=$(grep "PROGRAM_VERSION = " constants.py | cut -d= -f2 | tr -d '[:space:]"')
+
+mkdir -p $TOOLS_TMP_DIR
+
+# AppImage Root base für Python herunterladen
+if [ ! -f "$TOOLS_TMP_DIR/$APPIMAGE_BASE" ]; then
+    echo "Lade AppImage-Base herunter..."
+    wget https://github.com/niess/python-appimage/releases/download/$PYTHON_IMAGE_VERSION -O $TOOLS_TMP_DIR/$APPIMAGE_BASE
+    chmod +x $TOOLS_TMP_DIR/$APPIMAGE_BASE
+fi
+
+# AppImage Tool herunterladen
+if [ ! -f "$TOOLS_TMP_DIR/$APPIMAGE_TOOL" ]; then
+    echo "Lade AppImage-Tool herunter..."
+    wget $BASE_APP_IMAGE -O $TOOLS_TMP_DIR/$APPIMAGE_TOOL
+    chmod +x $TOOLS_TMP_DIR/$APPIMAGE_TOOL
+fi
+
+# Extrahieren
+echo "Bereite Base Image vor..."
+cd $BUILD_TMP_DIR
+$TOOLS_TMP_DIR/$APPIMAGE_BASE --appimage-extract
+mv squashfs-root AppDir
+
+# Applikation installieren
+mkdir AppDir/app
+
+echo "Kopiere Programmdateien"
+cd $SOURCE_DIR
+cp *.py $BUILD_TMP_DIR/AppDir/app
+cp resources/Logo.png $BUILD_TMP_DIR/AppDir/logo.png
+cp -r gui $BUILD_TMP_DIR/AppDir/app
+
+# Dependencies installieren
+echo "Bereite Python-Dependencies vor..."
+cd $BUILD_TMP_DIR
+mkdir -p AppDir/packages
+
+# uv installieren
+echo "Installiere uv..."
+$BUILD_TMP_DIR/AppDir/usr/bin/python -m pip install uv --target=$BUILD_TMP_DIR/AppDir/packages
+
+# jetzt die dependencies
+echo "Installiere Python-Dependencies..."
+cd $SOURCE_DIR
+$BUILD_TMP_DIR/AppDir/packages/bin/uv run --python $BUILD_TMP_DIR/AppDir/usr/bin/python pip install -r requirements.txt --target=$BUILD_TMP_DIR/AppDir/packages
+
+# AppRun patchen
+echo "Patche AppRun..."
+cd $BUILD_TMP_DIR/AppDir
+head --lines=-2 AppRun > AppRun1
+echo "export PYTHONPATH=\"\${APPDIR}/packages\"" >> AppRun1
+echo "\${APPDIR}/packages/bin/uv run \${APPDIR}/app/main.py" >> AppRun1
+mv AppRun1 AppRun
+chmod +x AppRun
+
+# Applikation für Desktop vorbereiten
+echo "Vorbereiten Desktopintegration..."
+cd $BUILD_TMP_DIR/AppDir
+rm python.png
+rm *.desktop
+
+echo "[Desktop Entry]
+Type=Application
+Name=Taktische Zeichen Druckgenerator
+Exec=AppRun
+Comment=
+Icon=logo
+Categories=Graphics;
+Terminal=false
+" > AppRun.desktop
+
+echo "AppImage vorbereitet unter $BUILD_TMP_DIR/AppDir"
+
+# AppImage erzeugen
+echo "Baue AppImage..."
+cd $SOURCE_DIR
+$TOOLS_TMP_DIR/$APPIMAGE_TOOL $BUILD_TMP_DIR/AppDir taktische_zeichen_generator-$VERSION.AppImage
